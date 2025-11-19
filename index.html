@@ -1,0 +1,234 @@
+<!-- Oppdatert HTML med 'Advarsel' og redigeringsknapp -->
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lærer Anmerkning System</title>
+<style>
+    body { font-family: Arial, sans-serif; background-color: #eef3f8; margin: 0; padding: 20px; }
+    .header { text-align: center; background-color: #4A90E2; color: white; padding: 20px; border-radius: 10px; }
+    .container { max-width: 800px; background: white; margin: 30px auto; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 20px 30px; }
+    select, textarea, button { width: 100%; padding: 10px; margin-top: 8px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #ccc; font-size: 15px; }
+    button { background-color: #4A90E2; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
+    button:hover { background-color: #357ABD; }
+    .teacher-profile { background-color: #f7f9fc; border-radius: 8px; padding: 15px; margin-top: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+    .level { padding: 5px 10px; border-radius: 6px; color: white; display: inline-block; font-weight: bold; margin-bottom: 6px; }
+    .GL { background-color: #4CAF50; }
+    .ML { background-color: #FFC107; }
+    .TF { background-color: #F44336; }
+    .anmerkning-item { background-color: #e9eef5; border-left: 4px solid #4A90E2; padding: 8px; margin: 6px 0; border-radius: 6px; }
+    .delete-btn { background-color: #f44336; color: white; border: none; padding: 6px 12px; font-size: 13px; border-radius: 4px; cursor: pointer; margin-top: 6px; }
+    .delete-btn:hover { background-color: #c62828; }
+    .edit-btn { background-color: #FF9800; color: white; border: none; padding: 6px 12px; font-size: 13px; border-radius: 4px; cursor: pointer; margin-top: 6px; margin-right: 6px; }
+    .edit-btn:hover { background-color: #e68900; }
+    .no-data { color: gray; font-style: italic; }
+    h2 { border-bottom: 2px solid #4A90E2; padding-bottom: 5px; }
+    .sign-btn { width: 48%; display: inline-block; background-color: #6a5acd; }
+    .sign-btn:hover { background-color: #5748c5; }
+    .sign-container { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 15px; }
+</style>
+</head>
+<body>
+    <div class="header">
+        <h1>Lærer Anmerkning System</h1>
+        <p>Velg lærer, anmerkningstype og skriv en kommentar</p>
+    </div>
+
+    <div class="container">
+        <label for="teacherSelect"><b>Velg lærer:</b></label>
+        <select id="teacherSelect" onchange="oppdaterProfilVisning()">
+            <option value="">-- Velg lærer --</option>
+        </select>
+
+        <div id="profilVisning"></div>
+
+        <label for="typeSelect"><b>Anmerkning type:</b></label>
+        <select id="typeSelect">
+            <option value="">-- Velg type --</option>
+            <option value="Oppførsel">Oppførsel</option>
+            <option value="Orden">Orden</option>
+            <option value="Advarsel">⚠️ Advarsel</option>
+        </select>
+
+        <label for="kommentar"><b>Kommentar:</b></label>
+        <textarea id="kommentar" placeholder="Skriv anmerkning her..."></textarea>
+
+        <div class="sign-container">
+            <button class="sign-btn" onclick="settSkriver('Mohammad Arkan Osman')">✍️ Skrev av: Mohammad Arkan Osman (8C)</button>
+            <button class="sign-btn" onclick="settSkriver('Kenny Hieu')">✍️ Skrev av: Kenny Hieu (8C)</button>
+        </div>
+
+        <button onclick="lagreAnmerkning()">💾 Lagre Anmerkning</button>
+
+        <div id="profilContainer">
+            <h2>Lærerprofiler</h2>
+            <div id="profiler"></div>
+        </div>
+    </div>
+
+<script>
+    const larere = ["Ahsan Mohammad Akhtar","Monica Stokker Langhelle","Charlotte Siggers Berntsen","Claudia Rittig","Birger Engelsrud Andresen","Ole Beute","Gina Sjøberg","Caroline Mikalsen"];    
+
+    const select = document.getElementById("teacherSelect");
+    larere.forEach(navn => { const option = document.createElement("option"); option.value = navn; option.textContent = navn; select.appendChild(option); });
+
+    let larerData = JSON.parse(localStorage.getItem("larerData")) || {};
+    let signertAv = "";
+    let redigerIndex = null;
+    let redigerLarer = null;
+
+    function settSkriver(navn) {
+        signertAv = `${navn} – 8C`;
+        alert(`Signert som: ${signertAv}`);
+    }
+
+    function beregnNiva(larer) {
+        const total = larerData[larer] ? larerData[larer].length : 0;
+        if (total >= 20) return "TF";
+        if (total >= 10) return "ML";
+        return "GL";
+    }
+
+    function tellAnmerkninger(larer, type) {
+        if (!larerData[larer]) return 0;
+        return larerData[larer].filter(a => a.type === type).length;
+    }
+
+    function oppdaterProfilVisning() {
+        const valgt = document.getElementById("teacherSelect").value;
+        const visning = document.getElementById("profilVisning");
+        visning.innerHTML = "";
+        if (!valgt) return;
+
+        const antOpp = tellAnmerkninger(valgt, "Oppførsel");
+        const antOrd = tellAnmerkninger(valgt, "Orden");
+        const niva = beregnNiva(valgt);
+
+        const profilDiv = document.createElement("div");
+        profilDiv.classList.add("teacher-profile");
+        profilDiv.innerHTML = `
+            <div class="teacher-info">
+                <h3>${valgt}</h3>
+                <div class="level ${niva}">${niva}</div>
+                <div class="counter">Oppførsel: ${antOpp} | Orden: ${antOrd}</div>
+            </div>
+        `;
+        visning.appendChild(profilDiv);
+    }
+
+    function visProfiler() {
+        const container = document.getElementById("profiler");
+        container.innerHTML = "";
+
+        larere.forEach(navn => {
+            const data = larerData[navn] || [];
+            const antOpp = tellAnmerkninger(navn, "Oppførsel");
+            const antOrd = tellAnmerkninger(navn, "Orden");
+            const niva = beregnNiva(navn);
+
+            const profilDiv = document.createElement("div");
+            profilDiv.classList.add("teacher-profile");
+            profilDiv.innerHTML = `
+                <div class="teacher-info">
+                    <h3>${navn}</h3>
+                    <div class="level ${niva}">${niva}</div>
+                    <div class="counter">Oppførsel: ${antOpp} | Orden: ${antOrd}</div>
+                </div>
+            `;
+
+            if (data.length === 0) {
+                const p = document.createElement("p");
+                p.classList.add("no-data");
+                p.textContent = "Ingen anmerkninger ennå.";
+                profilDiv.appendChild(p);
+            } else {
+                data.forEach((a, i) => {
+                    const item = document.createElement("div");
+                    item.classList.add("anmerkning-item");
+                    item.innerHTML = `
+                        <strong>Type:</strong> ${a.type}<br>
+                        <strong>Kommentar:</strong> ${a.kommentar}<br>
+                        <small>${a.dato}</small><br>
+                        ${a.skrevetAv ? `<em>Skrevet av: ${a.skrevetAv}</em><br>` : ""}
+                        <button class="edit-btn" onclick="redigerAnmerkning('${navn}', ${i})">Rediger</button>
+                        <button class="delete-btn" onclick="slettAnmerkning('${navn}', ${i})">Slett</button>
+                    `;
+                    profilDiv.appendChild(item);
+                });
+            }
+
+            container.appendChild(profilDiv);
+        });
+    }
+
+    function lagreAnmerkning() {
+        const larer = document.getElementById("teacherSelect").value;
+        const type = document.getElementById("typeSelect").value;
+        const kommentar = document.getElementById("kommentar").value.trim();
+
+        if (!larer || !type || !kommentar) {
+            alert("Vennligst fyll ut alle felt før du lagrer.");
+            return;
+        }
+
+        if (!signertAv) {
+            alert("Vennligst velg hvem som skrev anmerkningen.");
+            return;
+        }
+
+        if (redigerIndex !== null) {
+            larerData[redigerLarer][redigerIndex].type = type;
+            larerData[redigerLarer][redigerIndex].kommentar = kommentar;
+            larerData[redigerLarer][redigerIndex].skrevetAv = signertAv;
+
+            redigerIndex = null;
+            redigerLarer = null;
+        } else {
+            const anmerkning = {
+                type,
+                kommentar,
+                dato: new Date().toLocaleString("no-NO", { dateStyle: "short", timeStyle: "short" }),
+                skrevetAv: signertAv
+            };
+
+            if (!larerData[larer]) larerData[larer] = [];
+            larerData[larer].push(anmerkning);
+        }
+
+        localStorage.setItem("larerData", JSON.stringify(larerData));
+
+        document.getElementById("typeSelect").value = "";
+        document.getElementById("kommentar").value = "";
+        signertAv = "";
+
+        oppdaterProfilVisning();
+        visProfiler();
+        alert("Anmerkning lagret ✓");
+    }
+
+    function redigerAnmerkning(larer, index) {
+        redigerLarer = larer;
+        redigerIndex = index;
+        const data = larerData[larer][index];
+
+        document.getElementById("teacherSelect").value = larer;
+        document.getElementById("typeSelect").value = data.type;
+        document.getElementById("kommentar").value = data.kommentar;
+
+        oppdaterProfilVisning();
+        alert("Redigeringsmodus aktivert ✏️");
+    }
+
+    function slettAnmerkning(larer, index) {
+        if (!confirm("Slette anmerkning?")) return;
+        larerData[larer].splice(index, 1);
+        localStorage.setItem("larerData", JSON.stringify(larerData));
+        oppdaterProfilVisning();
+        visProfiler();
+    }
+
+    visProfiler();
+</script>
+</body>
+</html>
